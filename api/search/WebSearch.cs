@@ -16,7 +16,7 @@ namespace SearchSharp.api.search
         private static HttpClient GetClient()
         {
             var client = new HttpClient();
-            client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36"));
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36");
             return client;
         }
         
@@ -31,11 +31,11 @@ namespace SearchSharp.api.search
 
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
-            
-            var resultNodes = doc.DocumentNode.SelectNodes("//div[@class='g']");
+
+            var resultNodes = doc.DocumentNode.SelectNodes("//*[@class='yuRUbf']");
             if (resultNodes == null) throw new Exception("Failed to scrape Google search results");
             
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3[@class='LC20lb DKV0Md']") let urlNode = resultNode.SelectSingleNode(".//a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
+            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3[@class='LC20lb MBeuO DKV0Md']") let urlNode = resultNode.SelectSingleNode(".//a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
         }
         
         public async Task<List<SearchResult>> FromBing(string query)
