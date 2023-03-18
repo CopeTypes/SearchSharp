@@ -67,8 +67,15 @@ namespace SearchSharp.api.search
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            var resultNodes = doc.DocumentNode.SelectNodes("//div[@class='dd algo algo-sr Sr']");
+            // todo see if there a better way to do this
+            var firstResultNode =
+                doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch fst lst richAlgo']"); // yahoo moment..
+            var mostResultsNode = doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch richAlgo']");
+            var lastResultNode = doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch lst richAlgo']");
+
+            var resultNodes = firstResultNode.Concat(mostResultsNode.Concat(lastResultNode));
             if (resultNodes == null) throw new Exception("Failed to scrape Yahoo search results");
+            //todo still need to fix and/or clean-up returned data
 
             return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3/a") let urlNode = resultNode.SelectSingleNode(".//h3/a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
         }
@@ -85,7 +92,8 @@ namespace SearchSharp.api.search
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            var resultNodes = doc.DocumentNode.SelectNodes("//li[@class='serp-item']");
+            var resultNodes = doc.DocumentNode.SelectNodes("//li[@class='serp-item serp-item_card']");
+            //todo fixed the selector node, still throwing exception for some reason.
             if (resultNodes == null) throw new Exception("Failed to scrape Yandex search results");
 
             return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']") let urlNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult { Title = title, Url = url }).ToList();
@@ -105,9 +113,11 @@ namespace SearchSharp.api.search
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            var resultNodes = doc.DocumentNode.SelectNodes("//div[@class='result']");
+            // //div[@class='result results_links results_links_deep web-result']
+            var resultNodes = doc.DocumentNode.SelectNodes("//*[@class='result__a']"); // this is working but then the other selectors aren't
             if (resultNodes == null) throw new Exception("Failed to scrape DuckDuckGo search results");
 
+            //todo debug and fix
             return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a") let urlNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult { Title = title, Url = url }).ToList();
         }
     }
