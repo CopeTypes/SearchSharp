@@ -6,9 +6,11 @@ The software will ***not*** be held accountable for **any** consequences that re
 # SearchSharp
 An easy to use search engine api for C# projects.
 
-# Supported Search Engines
+# Supported search engines
 - Google
 - Bing
+
+# WIP
 - Yahoo
 - Yandex
 - DuckDuckGo
