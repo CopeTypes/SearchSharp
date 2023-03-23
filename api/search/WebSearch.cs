@@ -35,7 +35,7 @@ namespace SearchSharp.api.search
             var resultNodes = doc.DocumentNode.SelectNodes("//*[@class='yuRUbf']");
             if (resultNodes == null) throw new Exception("Failed to scrape Google search results");
             
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3[@class='LC20lb MBeuO DKV0Md']") let urlNode = resultNode.SelectSingleNode(".//a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
+            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3[@class='LC20lb MBeuO DKV0Md']") let urlNode = resultNode.SelectSingleNode(".//a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult(title, url)).ToList();
         }
         
         public async Task<List<SearchResult>> FromBing(string query)
@@ -52,7 +52,7 @@ namespace SearchSharp.api.search
             var resultNodes = doc.DocumentNode.SelectNodes("//li[@class='b_algo']");
             if (resultNodes == null) throw new Exception("Failed to scrape Bing search results");
 
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h2/a") let urlNode = resultNode.SelectSingleNode(".//h2/a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
+            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h2/a") let urlNode = resultNode.SelectSingleNode(".//h2/a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult(title, url)).ToList();
         }
         
         public async Task<List<SearchResult>> FromYahoo(string query)
@@ -67,17 +67,29 @@ namespace SearchSharp.api.search
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
 
-            // todo see if there a better way to do this
-            var firstResultNode =
-                doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch fst lst richAlgo']"); // yahoo moment..
-            var mostResultsNode = doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch richAlgo']");
-            var lastResultNode = doc.DocumentNode.SelectNodes("//*[@class='dd algo algo-sr relsrch lst richAlgo']");
+            
+            var resultsNode = doc.DocumentNode.Descendants("div")
+                .Where(node => node.GetAttributeValue("class", "")
+                    .Contains("algo-sr")).ToList(); // best i can come up with rn to select the most at once
 
-            var resultNodes = firstResultNode.Concat(mostResultsNode.Concat(lastResultNode));
-            if (resultNodes == null) throw new Exception("Failed to scrape Yahoo search results");
-            //todo still need to fix and/or clean-up returned data
+            //Console.WriteLine($@"Results node: {resultsNode.Count}");
+            var results = new List<SearchResult>();
+            foreach (var srNode in resultsNode)
+            {
+                var title = srNode.Descendants("a").FirstOrDefault()?.InnerText; // title but still ugly, the nice title is between like 7 tags, lovely.
+                //Console.WriteLine(test);
+                
+                var url = srNode.Descendants("a").FirstOrDefault()?.GetAttributeValue("href", "");
+                if (string.IsNullOrEmpty(url)) continue;
+                url = Uri.UnescapeDataString(url.Split(new[] { "/RU=" }, StringSplitOptions.None)[1]);
+                if (url.Contains("//RK=")) url = url.Split(new[] { "//RK" }, StringSplitOptions.None)[0];
+                else if (url.Contains("/RK=")) url = url.Split(new[] { "/RK" }, StringSplitOptions.None)[0];
+                //Console.WriteLine(url);
 
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h3/a") let urlNode = resultNode.SelectSingleNode(".//h3/a[@href]") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.Attributes["href"].Value select new SearchResult { Title = title, Url = url }).ToList();
+                results.Add(new SearchResult(title, url));
+            }
+
+            return results;
         }
         
         public async Task<List<SearchResult>> FromYandex(string query)
@@ -96,7 +108,7 @@ namespace SearchSharp.api.search
             //todo fixed the selector node, still throwing exception for some reason.
             if (resultNodes == null) throw new Exception("Failed to scrape Yandex search results");
 
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']") let urlNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult { Title = title, Url = url }).ToList();
+            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']") let urlNode = resultNode.SelectSingleNode(".//a[@class='organic__url link link_theme_normal']/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult(title, url)).ToList();
         }
         
         public async Task<List<SearchResult>> FromDuckDuckGo(string query)
@@ -118,7 +130,7 @@ namespace SearchSharp.api.search
             if (resultNodes == null) throw new Exception("Failed to scrape DuckDuckGo search results");
 
             //todo debug and fix
-            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a") let urlNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult { Title = title, Url = url }).ToList();
+            return (from resultNode in resultNodes let titleNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a") let urlNode = resultNode.SelectSingleNode(".//h2[@class='result__title']/a/@href") where titleNode != null && urlNode != null let title = titleNode.InnerText let url = urlNode.InnerText select new SearchResult(title, url)).ToList();
         }
     }
 }
