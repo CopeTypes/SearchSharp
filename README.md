@@ -12,8 +12,13 @@ An easy to use search engine api for C# projects.
 
 # WIP
 - Yahoo
-- Yandex
 - DuckDuckGo
 
 # Usage
-Coming soon
+    var results = await new WebSearch().FromGoogle("how to play chess"); // basic usage
+    
+    var results = await new WebSearch().FromGoogle("how to play chess", // using the optional params
+                 25, // results per page
+                 2, // page number
+                 WebSearch.SearchFreshness.PastWeek,
+                "chess.com"); // filter by site
